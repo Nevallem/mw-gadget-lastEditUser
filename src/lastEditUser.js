@@ -24,7 +24,7 @@ mw.messages.set( {
 // @return {undefined}
 function lastEditUser() {
 	let date, lastEdit, contribs, monthNames,
-		$lastEditUser = $( '<span id="lastEditUser">' + mw.message( 'leu-loading' ).plain() + '</span>' ).css( 'font', '12px Tahoma' );
+		$lastEditUser = $( `<span id="lastEditUser">${ mw.message( 'leu-loading' ).plain() }</span>` ).css( 'font', '12px Tahoma' );
 
 	monthNames = mw.message( 'leu-monthnames' ).plain().split( ' ' ); // default wgMonthNames returns the months in english on JS/CSS subpages
 	monthNames.unshift( '' );
