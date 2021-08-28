@@ -1,13 +1,12 @@
 /**
- * Last Edit User
+ * Shows on a user's page/subpage/discussion the date of the user's last contribution
  *
- * @desc Shows on a user's page/subpage/discussion the date of the user's last contribution
  * @author Roger Pestana (!Silent)
  * @date 29/jul/2012
- * @update 25/jul/2021
+ * @update 26/dec/2020
 */
-/* jshint laxbreak: true, esversion: 8 */
-/* global mw, $, URLSearchParams */
+/* global mw, $ */
+/* jshint laxbreak:true, esversion: 6 */
 
 ( function() {
 'use strict';
@@ -23,55 +22,55 @@ mw.messages.set( {
 
 // Main function
 // @return {undefined}
-async function lastEditUser() {
-	let date, lastEdit, contribs, monthNames, requestResponse, requestData,
+function lastEditUser() {
+	let date, lastEdit, contribs, monthNames,
 		$lastEditUser = $( `<span id="lastEditUser">${ mw.message( 'leu-loading' ).plain() }</span>` ).css( 'font', '12px Tahoma' );
 
 	monthNames = mw.message( 'leu-monthnames' ).plain().split( ' ' ); // default wgMonthNames returns the months in english on JS/CSS subpages
 	monthNames.unshift( '' );
 
-	requestResponse = await fetch( mw.util.wikiScript( 'api' ) + '?' + new URLSearchParams( {
+	$.getJSON( mw.util.wikiScript( 'api' ), {
 		action: 'query',
 		list: 'usercontribs',
 		format: 'json',
 		uclimit: '1',
 		ucuser: window.decodeURIComponent( /:([^\/]+)/.exec( mw.util.getUrl() )[ 1 ] ),
 		ucprop: 'timestamp'
-	} ) );
+	} ).done( function( data ) {
+		if ( !data || data.error ) {
+			$lastEditUser.html( mw.message( 'leu-error' ).plain() );
+			return;
+		}
 
-	requestData = await requestResponse.json();
+		contribs = data.query.usercontribs[ 0 ];
+
+		if ( $.isEmptyObject( contribs ) ) {
+			$lastEditUser.html( mw.message( 'leu-notEditedYet' ).plain() );
+			return;
+		}
+
+		lastEdit = contribs.timestamp.replace( /(T|Z)/g, ' ' ).split( ' ' );
+		date = lastEdit[ 0 ].split( '-' );
+
+		$lastEditUser.html(
+			mw.message(
+				'leu-date',
+				lastEdit[ 1 ], // hour
+				date[ 2 ].replace( /^0/, '' ).replace( /^1\b/, '1º' ), // day
+				monthNames[ date[ 1 ].replace( /^0/, '' ) ], // month
+				date[ 0 ] // year
+			).plain()
+		);
+	} );
+
 	$( '#bodyContent' ).before( $lastEditUser );
-
-	if ( !requestData || requestData.error ) {
-		$lastEditUser.html( mw.message( 'leu-error' ).plain() );
-		return;
-	}
-
-	contribs = requestData.query.usercontribs[ 0 ];
-
-	if ( !contribs || !Object.keys( contribs ).length ) {
-		$lastEditUser.html( mw.message( 'leu-notEditedYet' ).plain() );
-		return;
-	}
-
-	lastEdit = contribs.timestamp.replace( /(T|Z)/g, ' ' ).split( ' ' );
-	date = lastEdit[ 0 ].split( '-' );
-
-	$lastEditUser.html(
-		mw.message(
-			'leu-date',
-			lastEdit[ 1 ], // hour
-			date[ 2 ].replace( /^0/, '' ).replace( /^1\b/, '1º' ), // day
-			monthNames[ date[ 1 ].replace( /^0/, '' ) ], // month
-			date[ 0 ] // year
-		).plain()
-	);
 }
 
 if ( $.inArray( mw.config.get( 'wgNamespaceNumber' ), [ 2, 3 ] ) !== -1
 	&& mw.config.get( 'wgAction' ) === 'view'
 	&& !( mw.util.getParamValue( 'oldid' ) || mw.util.getParamValue( 'diff' ) )
-)
+) {
 	$( lastEditUser );
+}
 
 }() );
